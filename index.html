@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS AI Interface</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar für Browser-Suchanimation */
+        #browser-sidebar {
+            width: 300px;
+            background-color: #161b22;
+            border-right: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+            transition: width 0.3s ease;
+        }
+
+        #browser-sidebar h3 {
+            font-size: 14px;
+            color: #8b949e;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .browser-window {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
+            color: #58a6ff;
+            font-family: monospace;
+            min-height: 80px;
+            box-sizing: border-box;
+            overflow: hidden;
+            word-break: break-all;
+        }
+
+        /* Hauptbereich */
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Stables JARVIS-Symbol (Drehung entfernt) */
+        .jarvis-core {
+            width: 120px;
+            height: 120px;
+            border: 3px solid #58a6ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .jarvis-core span {
+            font-weight: bold;
+            color: #58a6ff;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        /* Chat / Status */
+        #chat-box {
+            width: 60%;
+            max-width: 600px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px;
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .input-area {
+            display: flex;
+            width: 60%;
+            max-width: 600px;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Linke Seite: Simulierte Browser-Aktivität -->
+    <div id="browser-sidebar">
+        <h3>Live Browser Aktivität</h3>
+        <div class="browser-window" id="browser-output">Warte auf Befehl...</div>
+    </div>
+
+    <!-- Hauptbereich -->
+    <div id="main-content">
+        <div class="jarvis-core">
+            <span>JARVIS</span>
+        </div>
+        
+        <div id="chat-box">System bereit. Wie kann ich dir helfen, Jan?</div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Stelle eine Frage an JARVIS...">
+            <button onclick="handleQuery()">Senden</button>
+        </div>
+    </div>
+
+    <!-- Audio-Element für realistische PC-Lüftergeräusche (synthetisch via Web Audio API erzeugt) -->
+    <script>
+        let audioCtx = null;
+        let fanNode = null;
+
+        // PC-Lüftergeräusch (Weißes Rauschen mit Filter für sanftes Surren statt hartem Ventilator)
+        function startFanNoise() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (fanNode) return; // Läuft bereits
+
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            fanNode = audioCtx.createBufferSource();
+            fanNode.buffer = noiseBuffer;
+            fanNode.loop = true;
+
+            // Filter für dumpfen PC-Lüfter-Sound
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 400;
+
+            fanNode.connect(filter);
+            filter.connect(audioCtx.destination);
+            fanNode.start();
+        }
+
+        function stopFanNoise() {
+            if (fanNode) {
+                fanNode.stop();
+                fanNode.disconnect();
+                fanNode = null;
+            }
+        }
+
+        // Sprachausgabe (männliche Stimme erzwingen, falls verfügbar)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'de-DE';
+                utterance.rate = 1.0;
+                
+                const voices = window.speechSynthesis.getVoices();
+                const maleVoice = voices.find(v => v.lang.includes('de') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david') || v.name.toLowerCase().includes('stefan') || v.name.toLowerCase().includes('markus')));
+                if (maleVoice) {
+                    utterance.voice = maleVoice;
+                }
+                
